@@ -1,5 +1,6 @@
 package pl.itomi.bluetooth.gui;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -16,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
@@ -76,27 +78,28 @@ public class AppWindow extends JFrame implements ActionListener {
 
 	public AppWindow initGui() {		
 		JButton b = new JButton(BUTTON_DISCOVER);
-		
-		
 		JProgressBar bar = new JProgressBar();
-		JLabel services = new JLabel("Not empty");
-		JTextArea serviceLog = new JTextArea(30, 50);
-		
-		JScrollPane scrollPane = createDeviceListScrollPanel();
+		JLabel statusLabel = new JLabel("Not empty");
+		JScrollPane devicePane = createDeviceListScrollPanel();
 		JScrollPane servicePane = createServiceScrollPanel();
 		
-		bar.setIndeterminate(true);
-		bar.setVisible(false);
+		JPanel statusPanel = new JPanel(new BorderLayout());
 		
-		mainPanel.add(b);
-		mainPanel.add(scrollPane);
-		mainPanel.add(services);
-		mainPanel.add(bar);
-		mainPanel.add(servicePane);
+		statusPanel.add(BorderLayout.EAST, bar);
+		statusPanel.add(BorderLayout.WEST, statusLabel);
 		
+		bar.setVisible(true);
+		bar.setValue(0);
 		
-		servicePane.setPreferredSize(new Dimension(250, 250));
-		scrollPane.setPreferredSize(new Dimension(250, 250));
+		mainPanel.setLayout(new BorderLayout());
+		
+		mainPanel.add(BorderLayout.NORTH, b);
+		mainPanel.add(BorderLayout.WEST, devicePane);
+		mainPanel.add(BorderLayout.EAST, servicePane);
+		mainPanel.add(BorderLayout.SOUTH, statusPanel);
+		
+		//servicePane.setPreferredSize(new Dimension(400, 250));
+		//devicePane.setPreferredSize(new Dimension(250, 250));
 		b.addActionListener(this);
 		
 		return this;
@@ -122,7 +125,11 @@ public class AppWindow extends JFrame implements ActionListener {
 					JList<? extends ServiceRecord> list, ServiceRecord value,
 					int index, boolean isSelected, boolean cellHasFocus) {
 				JLabel label = new JLabel();
-				label.setText(value.getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, false));
+				String str = list.getModel().getElementAt(index).getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, false);
+				if( str == null ) {
+					str = "error";
+				}
+				label.setText(str);
 				return label;
 			}
 		};
@@ -136,7 +143,9 @@ public class AppWindow extends JFrame implements ActionListener {
 			@Override
 			public void valueChanged(ListSelectionEvent e) {
 				ServiceRecord selected = serviceList.getSelectedValue();
-				// TODO: connection here somhow
+				boolean mustBeMaster = JOptionPane.showConfirmDialog(null, "Request master connection?", "Connection setting", JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION;
+				String url = selected.getConnectionURL(ServiceRecord.NOAUTHENTICATE_NOENCRYPT, mustBeMaster);
+				btController.connectToDevice(url);
 			}
 		};
 		return serviceListListener;
@@ -177,7 +186,7 @@ public class AppWindow extends JFrame implements ActionListener {
 				RemoteDevice device = (RemoteDevice) list.getModel().getElementAt(index);
 				String name = "error";
 				try {
-					name = device.getFriendlyName(false);
+					name = device.getFriendlyName(false) + " - " + device.getBluetoothAddress();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -210,16 +219,20 @@ public class AppWindow extends JFrame implements ActionListener {
 	}
 
 	public void begin() {
-		JProgressBar bar = (JProgressBar) this.mainPanel.getComponent(3);
+		JPanel panel = (JPanel) this.mainPanel.getComponent(3);
+		JProgressBar bar = (JProgressBar) panel.getComponent(0);
 		
-		bar.setVisible(true);
+		bar.setIndeterminate(true);
+		
 		
 	}
 	
 	public void completed() {
-		JProgressBar bar = (JProgressBar) this.mainPanel.getComponent(3);
-		
-		bar.setVisible(false);
+		JPanel panel = (JPanel) this.mainPanel.getComponent(3);
+		JProgressBar bar = (JProgressBar) panel.getComponent(0);
+	
+		bar.setIndeterminate(false);
+		bar.setValue(0);
 		
 	}
 
@@ -228,8 +241,11 @@ public class AppWindow extends JFrame implements ActionListener {
 	}
 	
 	public void setStatusLabel(String string) {
-		JLabel label = (JLabel) this.mainPanel.getComponent(2);
+		JPanel panel = (JPanel) this.mainPanel.getComponent(3);
+		JLabel label = (JLabel) panel.getComponent(1);
+	
 		label.setText(string);
 	}
 
 }
+

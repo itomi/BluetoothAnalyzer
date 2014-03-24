@@ -1,4 +1,5 @@
 package pl.itomi.bluetooth.devicecontroller;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.bluetooth.BluetoothStateException;
@@ -9,6 +10,8 @@ import javax.bluetooth.LocalDevice;
 import javax.bluetooth.RemoteDevice;
 import javax.bluetooth.ServiceRecord;
 import javax.bluetooth.UUID;
+import javax.microedition.io.Connection;
+import javax.microedition.io.Connector;
 
 import pl.itomi.bluetooth.gui.AppWindow;
 
@@ -114,5 +117,16 @@ public class BluetoothController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+
+	public void connectToDevice(String url) {
+		try {
+			Connection connection = Connector.open(url);
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 }
